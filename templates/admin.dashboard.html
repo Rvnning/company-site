@@ -29,7 +29,7 @@
             <tbody>
                 {% for inquiry in inquiries %}
                 <tr>
-                    <td>{{ inquiry.created_at[:10] }}</td>
+                    <td>{{ inquiry.created_at[:10] if inquiry.created_at else '-' }}</td>
                     <td><strong>{{ inquiry.company_name }}</strong></td>
                     <td>{{ inquiry.manager_name }}</td>
                     <td>{{ inquiry.phone }}</td>
@@ -67,13 +67,13 @@
                 <tr>
                     <td>{{ user.id }}</td>
                     <td><code>{{ user.username }}</code></td>
-                    <td><strong>{{ user.company_name }}</strong></td>
+                    <td><strong>{{ user.company_name if user.company_name else '-' }}</strong></td>
                     <td>
                         <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'primary' }}">
                             {{ user.role }}
                         </span>
                     </td>
-                    <td>{{ user.created_at[:10] }}</td>
+                    <td>{{ user.created_at[:10] if user.created_at else '-' }}</td>
                 </tr>
                 {% else %}
                 <tr>
