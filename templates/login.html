@@ -9,13 +9,13 @@
                 <h2 class="text-center mb-4">로그인</h2>
                 
                 <!-- 플래시 메시지 (경고/성공 알림) -->
-                with get_flashed_messages(with_categories=true) as messages:
-                    if messages:
-                        for category, message in messages:
-                            <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-                        endif
-                    endif
-                }%}
+                {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
