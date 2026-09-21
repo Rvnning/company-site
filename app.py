@@ -121,6 +121,9 @@ def admin_dashboard():
     users_res = supabase.table('users').select("*").execute()
     inquiries_res = supabase.table('inquiries').select("*").order('created_at', desc=True).execute()
     
+    users_data = users_res.data if users_res.data else []
+    inquiries_data = inquiries_res.data if inquiries_res.data else []
+
     return render_template(
         'admin_dashboard.html', 
         users=users_res.data, 
