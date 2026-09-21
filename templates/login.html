@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}로그인 - 회사 홈페이지{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">로그인</h2>
+                
+                <!-- 플래시 메시지 (경고/성공 알림) -->
+                with get_flashed_messages(with_categories=true) as messages:
+                    if messages:
+                        for category, message in messages:
+                            <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+                        endif
+                    endif
+                }%}
+
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">아이디</label>
+                        <input type="text" class="form-control" name="username" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">비밀번호</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100">로그인</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

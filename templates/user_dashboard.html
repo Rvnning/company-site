@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}고객 전용 페이지{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="p-5 bg-light rounded-3 shadow-sm">
+            <h1 class="display-6 fw-bold text-primary">{{ company_name }} 고객님, 환영합니다!</h1>
+            <p class="fs-5 mt-3">현재 진행 중인 프로젝트 현황 및 맞춤형 RE100 컨설팅 자료를 확인하실 수 있는 전용 공간입니다.</p>
+            <hr class="my-4">
+            <p>추가 문의나 자료 요청은 담당 영업 매니저에게 연락해 주시기 바랍니다.</p>
+            <a href="/logout" class="btn btn-outline-danger">로그아웃</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

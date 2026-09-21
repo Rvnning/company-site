@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}관리자 대시보드{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+        <h2>관리자 대시보드</h2>
+        <a href="/logout" class="btn btn-outline-danger btn-sm">로그아웃</a>
+    </div>
+</div>
+
+<!-- 고객 문의 현황 테이블 -->
+<div class="card shadow-sm mb-5">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">📥 접수된 고객 문의 내역</h5>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>접수일시</th>
+                    <th>회사명</th>
+                    <th>담당자</th>
+                    <th>연락처</th>
+                    <th>이메일</th>
+                    <th>문의내용</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inquiry in inquiries %}
+                <tr>
+                    <td>{{ inquiry.created_at[:10] }}</td>
+                    <td><strong>{{ inquiry.company_name }}</strong></td>
+                    <td>{{ inquiry.manager_name }}</td>
+                    <td>{{ inquiry.phone }}</td>
+                    <td>{{ inquiry.email }}</td>
+                    <td>{{ inquiry.content }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">접수된 문의가 없습니다.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 오프라인 가입 회원 목록 테이블 -->
+<div class="card shadow-sm">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">👥 등록된 기업 회원(Users) 목록</h5>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>로그인 아이디</th>
+                    <th>회사명</th>
+                    <th>권한(Role)</th>
+                    <th>가입일</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td><code>{{ user.username }}</code></td>
+                    <td><strong>{{ user.company_name }}</strong></td>
+                    <td>
+                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'primary' }}">
+                            {{ user.role }}
+                        </span>
+                    </td>
+                    <td>{{ user.created_at[:10] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">등록된 회원이 없습니다.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
