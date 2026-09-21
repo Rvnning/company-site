@@ -84,7 +84,7 @@ def login():
         users = response.data
         print("조회된 유저 데이터:", users)
         
-        if users and check_password_hash(users[0]['password_hash'], password):
+        if users and users[0]['password_hash'] == password:
             # 로그인 성공 시 세션 부여
             session['user_id'] = users[0]['id']
             session['username'] = users[0]['username']
