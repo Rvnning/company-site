@@ -82,6 +82,7 @@ def login():
         # Supabase users 테이블에서 사용자 조회
         response = supabase.table('users').select("*").eq('username', username).execute()
         users = response.data
+        print("조회된 유저 데이터:", users)
         
         if users and check_password_hash(users[0]['password_hash'], password):
             # 로그인 성공 시 세션 부여
