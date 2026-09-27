@@ -97,7 +97,6 @@ def login():
         # Supabase users 테이블에서 사용자 조회
         response = supabase.table('users').select("*").eq('username', username).execute()
         users = response.data
-        print("조회된 유저 데이터:", users)
         
         # 평문 비교 대신 해시 검증 함수(check_password_hash) 사용
         if users and check_password_hash(users[0]['password_hash'], password):
@@ -145,6 +144,44 @@ def admin_dashboard():
         users=users_res.data, 
         inquiries=inquiries_res.data
     )
+
+@app.route('/dashboard/admin/add-user', methods=['GET', 'POST'])
+@admin_required
+def add_user():
+    if request.method == 'GET':
+        return render_template('add_user.html')
+    
+    # POST 요청 시 기존 회원 등록 로직 수행
+    username = request.form.get('username')
+    password = request.form.get('password')
+    company_name = request.form.get('company_name')
+    role = request.form.get('role', 'user')
+    
+    if username and password and company_name:
+        password_hash = generate_password_hash(password)
+        
+        user_data = {
+            "username": username,
+            "password_hash": password_hash,
+            "company_name": company_name,
+            "role": role
+        }
+        
+        # 동적으로 추가된 폼 필드(전화번호, 이메일 등) 자동 수집
+        excluded_keys = ['username', 'password', 'company_name', 'role', 'csrf_token']
+        for key, value in request.form.items():
+            if key not in excluded_keys and value.strip():
+                user_data[key] = value.strip()
+                
+        try:
+            supabase.table('users').insert(user_data).execute()
+            flash(f'성공적으로 [{company_name}] 회원이 등록되었습니다.', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            print("회원 등록 에러:", e)
+            flash('회원 등록 중 오류가 발생했습니다. (아이디 중복 등 확인)', 'danger')
+            
+    return redirect(url_for('add_user'))
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -29,19 +29,19 @@
 
                     <!-- 로그인 폼 -->
                     <form action="/login" method="POST">
-                        <!-- CSRF 보호 토큰 -->
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-
+                        <!-- CSRF 보호 토큰 (필수) -->
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">아이디 (Username)</label>
                             <input type="text" class="form-control form-control-lg fs-6" name="username" placeholder="아이디를 입력하세요" required autofocus>
                         </div>
-
+                    
                         <div class="mb-4">
                             <label class="form-label fw-semibold small">비밀번호 (Password)</label>
                             <input type="password" class="form-control form-control-lg fs-6" name="password" placeholder="비밀번호를 입력하세요" required>
                         </div>
-
+                    
                         <button type="submit" class="btn btn-dark btn-lg w-100 py-3 fw-semibold shadow-sm mb-3">로그인</button>
                     </form>
 
