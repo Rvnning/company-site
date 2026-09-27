@@ -3,7 +3,7 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, send_file, flash
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf.csrf import CSRFProtect
 from functools import wraps
 
