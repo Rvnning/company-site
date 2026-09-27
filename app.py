@@ -63,7 +63,7 @@ def download_proposal():
     # (또는 static/uploads 폴더에 파일을 넣고 전송할 수도 있습니다.)
     try:
         # Supabase Storage Public URL 가져오기 예시 (파일명: company_intro.pdf 기준)
-        file_path = "company_intro.pdf"
+        file_path = "letter.jpg"
         public_url = supabase.storage.from_('proposals').get_public_url(file_path)
         return redirect(public_url)
     except Exception as e:
