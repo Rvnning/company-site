@@ -84,33 +84,52 @@ def update_inquiry_status(inquiry_id):
             
     return redirect(url_for('admin_dashboard'))
 
+import io
+
+# --- [관리자: 제안서 파일 업로드 라우트] ---
+@app.route('/dashboard/admin/upload-proposal', methods=['POST'])
+@admin_required
+def upload_proposal():
+    file = request.files.get('proposal_file')
+    
+    if file and file.filename:
+        try:
+            file_bytes = file.read()
+            file_name = "cierra_proposal.pdf"  # 항상 최신 파일명으로 고정하여 덮어쓰기
+            
+            # Supabase Storage의 proposals 버킷에 업로드 (upsert=true로 기존 파일 덮어쓰기)
+            supabase.storage.from_('proposals').upload(
+                path=file_name,
+                file=file_bytes,
+                file_options={"upsert": "true", "content-type": "application/pdf"}
+            )
+            
+            flash('회사 소개서가 성공적으로 업로드 및 갱신되었습니다.', 'success')
+        except Exception as e:
+            print("제안서 업로드 에러:", e)
+            flash('파일 업로드 중 오류가 발생했습니다.', 'danger')
+    else:
+        flash('업로드할 PDF 파일을 선택해 주세요.', 'warning')
+        
+    return redirect(url_for('admin_dashboard'))
+
+# --- [사용자: 제안서 다운로드 라우트] ---
 @app.route('/download-proposal')
 def download_proposal():
     try:
-        # 1. 'proposals' 버킷에 있는 파일 목록을 동적으로 가져옴 (하드코딩 제거)
-        files = supabase.storage.from_('proposals').list()
+        # Supabase Storage에서 제안서 파일 바이트 데이터 가져오기
+        file_data = supabase.storage.from_('proposals').download('cierra_proposal.pdf')
         
-        if not files:
-            flash('다운로드할 제안서 파일이 없습니다.', 'warning')
-            return redirect(url_for('index'))
-        
-        # 2. 버킷에 업로드된 첫 번째 파일의 이름을 동적으로 선택
-        file_path = files[0]['name']
-        
-        # 3. Supabase Storage에서 파일 바이너리 데이터를 직접 다운로드
-        file_data = supabase.storage.from_('proposals').download(file_path)
-        
-        # 4. Flask의 send_file을 사용하여 브라우저가 열지 않고 바로 다운로드하도록 강제함
         return send_file(
             io.BytesIO(file_data),
-            as_attachment=True,          # 브라우저 미리보기가 아닌 강제 다운로드 실행
-            download_name=file_path      # 다운로드될 때의 파일 이름 지정
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name='Cierra_Energy_Company_Profile.pdf'
         )
     except Exception as e:
-        print("파일 다운로드 에러:", e)
-        flash('제안서 파일을 다운로드하는 중 오류가 발생했습니다.', 'warning')
+        print("제안서 다운로드 에러:", e)
+        flash('등록된 회사 소개서 파일이 없거나 다운로드 중 오류가 발생했습니다.', 'warning')
         return redirect(url_for('index'))
-
 
 # --- [로그인 및 인증 라우팅] ---
 
