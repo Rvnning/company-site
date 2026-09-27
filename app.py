@@ -1,5 +1,6 @@
+import io
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, send_file, flash
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash
@@ -59,15 +60,29 @@ def inquiry():
 
 @app.route('/download-proposal')
 def download_proposal():
-    # Supabase Storage(proposals 버킷)에 있는 파일 다운로드 링크로 리다이렉트
-    # (또는 static/uploads 폴더에 파일을 넣고 전송할 수도 있습니다.)
     try:
-        # Supabase Storage Public URL 가져오기 예시 (파일명: company_intro.pdf 기준)
-        file_path = "letter.jpg"
-        public_url = supabase.storage.from_('proposals').get_public_url(file_path)
-        return redirect(public_url)
+        # 1. 'proposals' 버킷에 있는 파일 목록을 동적으로 가져옴 (하드코딩 제거)
+        files = supabase.storage.from_('proposals').list()
+        
+        if not files:
+            flash('다운로드할 제안서 파일이 없습니다.', 'warning')
+            return redirect(url_for('index'))
+        
+        # 2. 버킷에 업로드된 첫 번째 파일의 이름을 동적으로 선택
+        file_path = files[0]['name']
+        
+        # 3. Supabase Storage에서 파일 바이너리 데이터를 직접 다운로드
+        file_data = supabase.storage.from_('proposals').download(file_path)
+        
+        # 4. Flask의 send_file을 사용하여 브라우저가 열지 않고 바로 다운로드하도록 강제함
+        return send_file(
+            io.BytesIO(file_data),
+            as_attachment=True,          # 브라우저 미리보기가 아닌 강제 다운로드 실행
+            download_name=file_path      # 다운로드될 때의 파일 이름 지정
+        )
     except Exception as e:
-        flash('제안서 파일을 찾을 수 없습니다.', 'warning')
+        print("파일 다운로드 에러:", e)
+        flash('제안서 파일을 다운로드하는 중 오류가 발생했습니다.', 'warning')
         return redirect(url_for('index'))
 
 
