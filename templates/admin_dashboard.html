@@ -9,36 +9,54 @@
     </div>
 </div>
 
-<!-- 고객 문의 현황 테이블 -->
+<!-- 고객 문의 내역 관리 테이블 -->
 <div class="card shadow-sm mb-5">
-    <div class="card-header bg-dark text-white">
-        <h5 class="mb-0">📥 접수된 고객 문의 내역</h5>
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0">📥 고객 문의 및 상담 신청 내역</h5>
+        <span class="badge bg-light text-dark">실시간 접수 현황</span>
     </div>
     <div class="card-body table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-hover align-middle">
             <thead>
                 <tr>
                     <th>접수일시</th>
                     <th>회사명</th>
                     <th>담당자</th>
-                    <th>연락처</th>
-                    <th>이메일</th>
-                    <th>문의내용</th>
+                    <th>연락처 / 이메일</th>
+                    <th>문의 내용</th>
+                    <th class="text-center" style="width: 180px;">처리 상태</th>
                 </tr>
             </thead>
             <tbody>
-                {% for inquiry in inquiries %}
+                {% for item in inquiries %}
                 <tr>
-                    <td>{{ inquiry.created_at[:10] if inquiry.created_at else '-' }}</td>
-                    <td><strong>{{ inquiry.company_name }}</strong></td>
-                    <td>{{ inquiry.manager_name }}</td>
-                    <td>{{ inquiry.phone }}</td>
-                    <td>{{ inquiry.email }}</td>
-                    <td>{{ inquiry.content }}</td>
+                    <td><small class="text-muted">{{ item.created_at[:16].replace('T', ' ') if item.created_at else '-' }}</small></td>
+                    <td><strong>{{ item.company_name }}</strong></td>
+                    <td>{{ item.manager_name }}</td>
+                    <td>
+                        <div class="small">{{ item.phone }}</div>
+                        <div class="small text-muted">{{ item.email if item.email else '-' }}</div>
+                    </td>
+                    <td>
+                        <div style="max-width: 250px; white-space: normal; word-break: break-all;">
+                            {{ item.content }}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <!-- 상태 변경 폼 -->
+                        <form action="/dashboard/admin/update-inquiry-status/{{ item.id }}" method="POST" class="d-flex align-items-center gap-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="접수 완료" {{ 'selected' if item.status == '접수 완료' or not item.status else '' }}>접수 완료</option>
+                                <option value="처리 중" {{ 'selected' if item.status == '처리 중' else '' }}>처리 중</option>
+                                <option value="답변 완료" {{ 'selected' if item.status == '답변 완료' else '' }}>답변 완료</option>
+                            </select>
+                        </form>
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted">접수된 문의가 없습니다.</td>
+                    <td colspan="6" class="text-center text-muted py-4">접수된 고객 문의가 없습니다.</td>
                 </tr>
                 {% endfor %}
             </tbody>
