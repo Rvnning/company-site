@@ -115,6 +115,33 @@ def login():
             
     return render_template('login.html')
 
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'GET':
+        return render_template('reset_password.html')
+    
+    username = request.form.get('username')
+    company_name = request.form.get('company_name')
+    new_password = request.form.get('new_password')
+    
+    if username and company_name and new_password:
+        # 1. 아이디와 회사명이 일치하는 사용자가 있는지 확인
+        response = supabase.table('users').select("*").eq('username', username).eq('company_name', company_name).execute()
+        
+        if response.data:
+            # 2. 새 비밀번호 해시화
+            new_password_hash = generate_password_hash(new_password)
+            
+            # 3. Supabase 비밀번호 업데이트
+            supabase.table('users').update({"password_hash": new_password_hash}).eq('username', username).execute()
+            
+            flash('비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해 주세요.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('입력하신 정보와 일치하는 회원을 찾을 수 없습니다.', 'danger')
+            
+    return render_template('reset_password.html')
+
 @app.route('/logout')
 def logout():
     session.clear()
