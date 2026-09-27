@@ -183,5 +183,18 @@ def add_user():
             
     return redirect(url_for('add_user'))
 
+@app.route('/dashboard/admin/delete-user/<user_id>', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    try:
+        # Supabase users 테이블에서 해당 ID의 회원 삭제
+        supabase.table('users').delete().eq('id', user_id).execute()
+        flash('회원이 성공적으로 삭제되었습니다.', 'success')
+    except Exception as e:
+        print("회원 삭제 에러:", e)
+        flash('회원 삭제 중 오류가 발생했습니다.', 'danger')
+        
+    return redirect(url_for('admin_dashboard'))
+
 if __name__ == '__main__':
     app.run(debug=True)
