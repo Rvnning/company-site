@@ -31,6 +31,16 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# 4. 로그인 여부를 확인하는 데코레이터
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('로그인이 필요합니다.', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # --- [공개 페이지 라우팅] ---
 
 @app.route('/')
@@ -150,12 +160,42 @@ def logout():
 
 # --- [대시보드 페이지 라우팅] ---
 
-@app.route('/dashboard/user')
+# --- [일반 회원 마이페이지 라우트] ---
+@app.route('/dashboard/user', methods=['GET', 'POST'])
+@login_required
 def user_dashboard():
-    if 'user_id' not in session or session.get('role') != 'user':
-        return redirect(url_for('login'))
-    return render_template('user_dashboard.html', company_name=session.get('company_name'))
-
+    user_id = session.get('user_id')
+    
+    if request.method == 'POST':
+        company_name = request.form.get('company_name')
+        phone = request.form.get('phone', '')
+        email = request.form.get('email', '')
+        
+        update_data = {
+            "company_name": company_name,
+            "phone": phone,
+            "email": email
+        }
+        
+        try:
+            # Supabase users 테이블에서 현재 로그인한 유저의 정보 업데이트
+            supabase.table('users').update(update_data).eq('id', user_id).execute()
+            
+            # 세션에 저장된 회사명 캐시도 함께 갱신
+            session['company_name'] = company_name
+            flash('회원 정보가 성공적으로 수정되었습니다.', 'success')
+        except Exception as e:
+            print("회원 정보 수정 에러:", e)
+            flash('정보 수정 중 오류가 발생했습니다.', 'danger')
+            
+        return redirect(url_for('user_dashboard'))
+    
+    # GET 요청 시 현재 회원의 최신 정보를 Supabase에서 조회
+    response = supabase.table('users').select("*").eq('id', user_id).execute()
+    user_info = response.data[0] if response.data else {}
+    
+    return render_template('user_dashboard.html', user=user_info)
+    
 @app.route('/dashboard/admin')
 @admin_required
 def admin_dashboard():
