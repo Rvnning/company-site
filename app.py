@@ -68,6 +68,22 @@ def inquiry():
     
     return redirect(url_for('index'))
 
+@app.route('/dashboard/admin/update-inquiry-status/<int:inquiry_id>', methods=['POST'])
+@admin_required
+def update_inquiry_status(inquiry_id):
+    new_status = request.form.get('status')
+    
+    if new_status:
+        try:
+            # Supabase inquiries 테이블의 status 업데이트
+            supabase.table('inquiries').update({"status": new_status}).eq('id', inquiry_id).execute()
+            flash('문의 처리 상태가 변경되었습니다.', 'success')
+        except Exception as e:
+            print("문의 상태 변경 에러:", e)
+            flash('상태 변경 중 오류가 발생했습니다.', 'danger')
+            
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/download-proposal')
 def download_proposal():
     try:
@@ -195,7 +211,7 @@ def user_dashboard():
     user_info = response.data[0] if response.data else {}
     
     return render_template('user_dashboard.html', user=user_info)
-    
+
 @app.route('/dashboard/admin')
 @admin_required
 def admin_dashboard():
