@@ -319,21 +319,21 @@ def notice_detail(notice_id):
 
     if notice.get('link_url'):
         return redirect(notice['link_url'])
-        
+
     return render_template('notice_detail.html', notice=notice)
 
-        try:
-            supabase.table('notices').insert({
-                "title": title,
-                "category": category,
-                "content": content,
-                "link_url": link_url if link_url else None
-            }).execute()
-            flash('공지사항이 성공적으로 등록되었습니다.', 'success')
-            return redirect(url_for('admin_dashboard'))
-        except Exception as e:
-            print("공지사항 등록 에러:", e)
-            flash('등록 중 오류가 발생했습니다.', 'danger')
+    try:
+        supabase.table('notices').insert({
+            "title": title,
+            "category": category,
+            "content": content,
+            "link_url": link_url if link_url else None
+        }).execute()
+        flash('공지사항이 성공적으로 등록되었습니다.', 'success')
+        return redirect(url_for('admin_dashboard'))
+    except Exception as e:
+        print("공지사항 등록 에러:", e)
+        flash('등록 중 오류가 발생했습니다.', 'danger')
             
     return redirect(url_for('add_notice'))
 
