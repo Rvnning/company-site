@@ -337,6 +337,33 @@ def notice_detail(notice_id):
             
     return redirect(url_for('add_notice'))
 
+@app.route('/dashboard/admin/notices/add', methods=['GET', 'POST'])
+@admin_required
+def add_notice():
+    if request.method == 'GET':
+        return render_template('add_notice.html')
+    
+    title = request.form.get('title')
+    category = request.form.get('category', '공지사항')
+    content = request.form.get('content', '') # 링크 뉴스일 경우 본문은 비워둘 수 있음
+    link_url = request.form.get('link_url', '').strip() # 뉴스 외부 링크
+    
+    if title:
+        try:
+            supabase.table('notices').insert({
+                "title": title,
+                "category": category,
+                "content": content,
+                "link_url": link_url if link_url else None
+            }).execute()
+            flash('공지사항/뉴스가 성공적으로 등록되었습니다.', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            print("공지사항 등록 에러:", e)
+            flash('등록 중 오류가 발생했습니다.', 'danger')
+            
+    return redirect(url_for('add_notice'))
+
 # --- [관리자: 공지사항 삭제] ---
 @app.route('/dashboard/admin/notices/delete/<int:notice_id>', methods=['POST'])
 @admin_required
