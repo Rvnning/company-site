@@ -316,25 +316,18 @@ def notice_detail(notice_id):
         return redirect(url_for('notice_list'))
     
     notice = response.data[0]
+
+    if notice.get('link_url'):
+        return redirect(notice['link_url'])
+        
     return render_template('notice_detail.html', notice=notice)
 
-# --- [관리자: 공지사항 작성 페이지 및 처리] ---
-@app.route('/dashboard/admin/notices/add', methods=['GET', 'POST'])
-@admin_required
-def add_notice():
-    if request.method == 'GET':
-        return render_template('add_notice.html')
-    
-    title = request.form.get('title')
-    category = request.form.get('category', '공지사항')
-    content = request.form.get('content')
-    
-    if title and content:
         try:
             supabase.table('notices').insert({
                 "title": title,
                 "category": category,
-                "content": content
+                "content": content,
+                "link_url": link_url if link_url else None
             }).execute()
             flash('공지사항이 성공적으로 등록되었습니다.', 'success')
             return redirect(url_for('admin_dashboard'))
