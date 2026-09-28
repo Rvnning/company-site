@@ -237,14 +237,17 @@ def admin_dashboard():
     # 관리자 대시보드: 오프라인 가입 회원 목록과 고객 문의 내역 조회
     users_res = supabase.table('users').select("*").execute()
     inquiries_res = supabase.table('inquiries').select("*").order('created_at', desc=True).execute()
-    
+    notices_res = supabase.table('notices').select("*").order('created_at', desc=True).execute()
+
     users_data = users_res.data if users_res.data else []
     inquiries_data = inquiries_res.data if inquiries_res.data else []
-
+    notices_data = notices_res.data if notices_res.data else []
+    
     return render_template(
         'admin_dashboard.html', 
         users=users_res.data, 
-        inquiries=inquiries_res.data
+        inquiries=inquiries_res.data,
+        notices=notices_data
     )
 
 @app.route('/dashboard/admin/add-user', methods=['GET', 'POST'])
@@ -295,6 +298,62 @@ def delete_user(user_id):
     except Exception as e:
         print("회원 삭제 에러:", e)
         flash('회원 삭제 중 오류가 발생했습니다.', 'danger')
+        
+    return redirect(url_for('admin_dashboard'))
+
+# --- [사용자: 공지사항 목록 및 상세 보기] ---
+@app.route('/notices')
+def notice_list():
+    response = supabase.table('notices').select("*").order('created_at', desc=True).execute()
+    notices = response.data if response.data else []
+    return render_template('notice_list.html', notices=notices)
+
+@app.route('/notices/<int:notice_id>')
+def notice_detail(notice_id):
+    response = supabase.table('notices').select("*").eq('id', notice_id).execute()
+    if not response.data:
+        flash('존재하지 않거나 삭제된 게시글입니다.', 'warning')
+        return redirect(url_for('notice_list'))
+    
+    notice = response.data[0]
+    return render_template('notice_detail.html', notice=notice)
+
+# --- [관리자: 공지사항 작성 페이지 및 처리] ---
+@app.route('/dashboard/admin/notices/add', methods=['GET', 'POST'])
+@admin_required
+def add_notice():
+    if request.method == 'GET':
+        return render_template('add_notice.html')
+    
+    title = request.form.get('title')
+    category = request.form.get('category', '공지사항')
+    content = request.form.get('content')
+    
+    if title and content:
+        try:
+            supabase.table('notices').insert({
+                "title": title,
+                "category": category,
+                "content": content
+            }).execute()
+            flash('공지사항이 성공적으로 등록되었습니다.', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            print("공지사항 등록 에러:", e)
+            flash('등록 중 오류가 발생했습니다.', 'danger')
+            
+    return redirect(url_for('add_notice'))
+
+# --- [관리자: 공지사항 삭제] ---
+@app.route('/dashboard/admin/notices/delete/<int:notice_id>', methods=['POST'])
+@admin_required
+def delete_notice(notice_id):
+    try:
+        supabase.table('notices').delete().eq('id', notice_id).execute()
+        flash('게시글이 삭제되었습니다.', 'success')
+    except Exception as e:
+        print("공지사항 삭제 에러:", e)
+        flash('삭제 중 오류가 발생했습니다.', 'danger')
         
     return redirect(url_for('admin_dashboard'))
 
