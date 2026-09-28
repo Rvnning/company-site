@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf.csrf import CSRFProtect
 from functools import wraps
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # 1. 환경 변수 로드 (.env 파일 읽기)
 load_dotenv()
@@ -20,6 +24,36 @@ csrf = CSRFProtect(app)
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
+
+# .env에서 이메일 설정 불러오기
+MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
+MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
+MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+
+def send_email_code(to_email, code):
+    if not MAIL_USERNAME or not MAIL_PASSWORD:
+        print("이메일 계정 설정(ENV)이 누락되었습니다.")
+        return False
+        
+    try:
+        msg = MIMEMultipart()
+        msg['Subject'] = '[Cierra Energy] 비밀번호 재설정 인증번호'
+        msg['From'] = MAIL_USERNAME
+        msg['To'] = to_email
+        
+        body = f"안녕하세요, Cierra Energy입니다.\n\n요청하신 비밀번호 재설정 인증번호는 [{code}] 입니다.\n화면에 인증번호를 입력해 주세요."
+        msg.attach(MIMEText(body, 'plain'))
+        
+        server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
+        server.starttls()
+        server.login(MAIL_USERNAME, MAIL_PASSWORD)
+        server.sendmail(MAIL_USERNAME, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print("이메일 발송 에러:", e)
+        return False
 
 # 3. 관리자 권한 확인 데코레이터
 def admin_required(f):
@@ -160,32 +194,59 @@ def login():
             
     return render_template('login.html')
 
+# 1. 인증번호 이메일 발송 API (AJAX 요청용)
+@app.route('/send-auth-email', methods=['POST'])
+def send_auth_email():
+    username = request.form.get('username')
+    email = request.form.get('email')
+    
+    # 해당 아이디와 이메일이 일치하는 회원이 있는지 확인
+    res = supabase.table('users').select("*").eq('username', username).eq('email', email).execute()
+    if not res.data:
+        return {"success": False, "message": "일치하는 아이디와 이메일 정보를 찾을 수 없습니다."}, 400
+        
+    # 6자리 랜덤 인증번호 생성 및 세션 저장
+    auth_code = str(random.randint(100000, 999999))
+    session['reset_username'] = username
+    session['reset_email'] = email
+    session['reset_code'] = auth_code
+    
+    # 이메일 발송 실행
+    success = send_email_code(email, auth_code)
+    if success:
+        return {"success": True, "message": "인증번호가 이메일로 발송되었습니다."}
+    else:
+        return {"success": False, "message": "이메일 발송에 실패했습니다. 관리자에게 문의하세요."}, 500
+
+# 2. 인증번호 확인 및 비밀번호 변경 처리
 @app.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
         return render_template('reset_password.html')
     
     username = request.form.get('username')
-    company_name = request.form.get('company_name')
+    email = request.form.get('email')
+    user_code = request.form.get('auth_code')
     new_password = request.form.get('new_password')
     
-    if username and company_name and new_password:
-        # 1. 아이디와 회사명이 일치하는 사용자가 있는지 확인
-        response = supabase.table('users').select("*").eq('username', username).eq('company_name', company_name).execute()
+    # 세션에 저장된 인증 정보와 사용자가 입력한 정보 대조
+    if (session.get('reset_username') == username and 
+        session.get('reset_email') == email and 
+        session.get('reset_code') == user_code):
         
-        if response.data:
-            # 2. 새 비밀번호 해시화
-            new_password_hash = generate_password_hash(new_password)
-            
-            # 3. Supabase 비밀번호 업데이트
-            supabase.table('users').update({"password_hash": new_password_hash}).eq('username', username).execute()
-            
-            flash('비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해 주세요.', 'success')
-            return redirect(url_for('login'))
-        else:
-            flash('입력하신 정보와 일치하는 회원을 찾을 수 없습니다.', 'danger')
-            
-    return render_template('reset_password.html')
+        new_password_hash = generate_password_hash(new_password)
+        supabase.table('users').update({"password_hash": new_password_hash}).eq('username', username).execute()
+        
+        # 사용 완료된 세션 정리
+        session.pop('reset_username', None)
+        session.pop('reset_email', None)
+        session.pop('reset_code', None)
+        
+        flash('비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해 주세요.', 'success')
+        return redirect(url_for('login'))
+    else:
+        flash('인증번호가 일치하지 않거나 올바르지 않은 정보입니다.', 'danger')
+        return redirect(url_for('reset_password'))
 
 @app.route('/logout')
 def logout():
