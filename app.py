@@ -205,6 +205,8 @@ def user_dashboard():
         company_name = request.form.get('company_name')
         phone = request.form.get('phone', '')
         email = request.form.get('email', '')
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
         
         update_data = {
             "company_name": company_name,
@@ -213,10 +215,20 @@ def user_dashboard():
         }
         
         try:
-            # Supabase users 테이블에서 현재 로그인한 유저의 정보 업데이트
+            # 2. 비밀번호 변경을 시도하는 경우
+            if current_password and new_password:
+                # 현재 로그인된 유저의 기존 비밀번호 해시 가져오기
+                res = supabase.table('users').select("password_hash").eq('id', user_id).execute()
+                if res.data and check_password_hash(res.data[0]['password_hash'], current_password):
+                    # 현재 비밀번호가 일치하면 새 비밀번호 해시 생성 후 업데이트 대상에 추가
+                    update_data["password_hash"] = generate_password_hash(new_password)
+                else:
+                    flash('현재 비밀번호가 일치하지 않습니다. 비밀번호 변경은 실패했습니다.', 'danger')
+                    return redirect(url_for('user_dashboard'))
+            
+            # 3. Supabase 업데이트 실행
             supabase.table('users').update(update_data).eq('id', user_id).execute()
             
-            # 세션에 저장된 회사명 캐시도 함께 갱신
             session['company_name'] = company_name
             flash('회원 정보가 성공적으로 수정되었습니다.', 'success')
         except Exception as e:
