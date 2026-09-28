@@ -7,9 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf.csrf import CSRFProtect
 from functools import wraps
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import resend
 
 # 1. 환경 변수 로드 (.env 파일 읽기)
 load_dotenv()
@@ -25,31 +23,20 @@ url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
-# .env에서 이메일 설정 불러오기
-MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
-MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
-MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
-MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+# Resend API 키 설정
+resend.api_key = os.environ.get("RESEND_API_KEY")
 
 def send_email_code(to_email, code):
-    if not MAIL_USERNAME or not MAIL_PASSWORD:
-        print("이메일 계정 설정(ENV)이 누락되었습니다.")
-        return False
-        
     try:
-        msg = MIMEMultipart()
-        msg['Subject'] = '[Cierra Energy] 비밀번호 재설정 인증번호'
-        msg['From'] = MAIL_USERNAME
-        msg['To'] = to_email
+        params = {
+            "from": "Cierra Energy <cierra3338@gmail.com>",  # 또는 본인 인증된 도메인 이메일
+            "to": [to_email],
+            "subject": "[Cierra] 비밀번호 재설정 인증번호",
+            "html": f"<p>안녕하세요, Cierra입니다.</p><p>요청하신 비밀번호 재설정 인증번호는 <b>[{code}]</b> 입니다.</p>"
+        }
         
-        body = f"안녕하세요, Cierra Energy입니다.\n\n요청하신 비밀번호 재설정 인증번호는 [{code}] 입니다.\n화면에 인증번호를 입력해 주세요."
-        msg.attach(MIMEText(body, 'plain'))
-        
-        server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
-        server.starttls()
-        server.login(MAIL_USERNAME, MAIL_PASSWORD)
-        server.sendmail(MAIL_USERNAME, to_email, msg.as_string())
-        server.quit()
+        email = resend.Emails.send(params)
+        print("이메일 발송 성공:", email)
         return True
     except Exception as e:
         print("이메일 발송 에러:", e)
