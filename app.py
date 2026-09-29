@@ -78,14 +78,46 @@ def inquiry():
     content = request.form.get('content')
     
     if company_name and manager_name and phone and content:
-        supabase.table('inquiries').insert({
-            "company_name": company_name,
-            "manager_name": manager_name,
-            "phone": phone,
-            "email": email,
-            "content": content
-        }).execute()
-        flash('문의가 성공적으로 접수되었습니다.', 'success')
+        try:
+            supabase.table('inquiries').insert({
+                "company_name": company_name,
+                "manager_name": manager_name,
+                "phone": phone,
+                "email": email,
+                "content": content
+            }).execute()
+            # 2. 💡 관리자에게 Resend를 통한 실시간 이메일 알림 발송
+            # MAIL_USERNAME(또는 별도의 관리자 수신 이메일)로 알림 발송
+            admin_email = os.environ.get("MAIL_USERNAME")
+
+            if admin_email:
+                params = {
+                    "from": "Cierra Energy System <onboarding@resend.dev>",
+                    "to": [admin_email],
+                    "subject": f"[새로운 견적/제휴 문의] {company_name} ({manager_name} 님)",
+                    "html": f"""
+                        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                            <h2 style="color: #0d6efd; margin-top: 0;">⚡ 씨에라에너지 새로운 고객 문의</h2>
+                            <p>웹사이트를 통해 새로운 태양광·RE100 관련 문의가 접수되었습니다.</p>
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p><b>🏢 회사명:</b> {company_name}</p>
+                            <p><b>👤 담당자명:</b> {manager_name}</p>
+                            <p><b>📞 연락처:</b> {phone}</p>
+                            <p><b>📧 이메일:</b> {email if email else '미입력'}</p>
+                            <br>
+                            <p><b>📝 문의 내용:</b></p>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; color: #333; line-height: 1.5;">
+                                {content.replace(chr(10), '<br>')}
+                            </div>
+                        </div>
+                    """
+                }
+                resend.Emails.send(params)
+
+            flash('문의가 성공적으로 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.', 'success')
+        except Exception as e:
+            print("문의 등록 및 이메일 전송 에러:", e)
+            flash('문의 접수 중 오류가 발생했습니다.', 'danger')
     
     return redirect(url_for('index'))
 
