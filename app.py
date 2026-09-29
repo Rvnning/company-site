@@ -474,9 +474,9 @@ def delete_notice(notice_id):
     return redirect(url_for('admin_dashboard'))
 
 # 1. 회원 전용 자료실 페이지
-@app.route('/vault')
+@app.route('/documents')
 @login_required
-def vault():
+def documents():
     try:
         # Supabase에서 업로드된 문서 목록 가져오기
         response = supabase.table('documents').select("*").order('created_at', desc=True).execute()
@@ -485,7 +485,7 @@ def vault():
         print("자료실 조회 에러:", e)
         documents = []
         
-    return render_template('vault.html', documents=documents)
+    return render_template('documents.html', documents=documents)
 
 # --- [관리자: 자료실 관리 페이지 전용 라우트] ---
 @app.route('/dashboard/admin/documents', methods=['GET'])
@@ -513,12 +513,12 @@ def admin_upload_document():
             filename = secure_filename(file.filename)
             file_bytes = file.read()
             
-            # 1. Supabase Storage의 'proposals'(또는 문서용 버킷)에 실제 파일 업로드
+            # 1. Supabase Storage의 'documents'(또는 문서용 버킷)에 실제 파일 업로드
             # 고유한 파일명 유지를 위해 경로 설정 (예: documents/현재시간_파일명)
             import time
-            storage_path = f"vault_docs/{int(time.time())}_{filename}"
+            storage_path = f"documents_docs/{int(time.time())}_{filename}"
             
-            supabase.storage.from_('proposals').upload(
+            supabase.storage.from_('documents').upload(
                 path=storage_path,
                 file=file_bytes,
                 file_options={"upsert": "false", "content-type": "application/pdf"}
@@ -549,14 +549,14 @@ def download_vault_document(doc_id):
         res = supabase.table('documents').select("*").eq('id', doc_id).execute()
         if not res.data:
             flash('존재하지 않는 문서입니다.', 'warning')
-            return redirect(url_for('vault'))
+            return redirect(url_for('documents'))
             
         doc = res.data[0]
         storage_path = doc['file_path']
         title = doc['title']
         
         # 2. Supabase Storage에서 파일 바이트 다운로드
-        file_data = supabase.storage.from_('proposals').download(storage_path)
+        file_data = supabase.storage.from_('documents').download(storage_path)
         
         # 3. 브라우저로 안전하게 PDF 파일 전송 (다운로드 처리)
         return send_file(
@@ -568,7 +568,7 @@ def download_vault_document(doc_id):
     except Exception as e:
         print("자료 다운로드 에러:", e)
         flash('파일 다운로드 중 오류가 발생했습니다.', 'warning')
-        return redirect(url_for('vault'))
+        return redirect(url_for('documents'))
 
 # --- [관리자: 자료실 문서 삭제 라우트 (스토리지 파일 + DB 동시 삭제)] ---
 @app.route('/dashboard/admin/documents/delete/<doc_id>', methods=['POST'])
@@ -581,7 +581,7 @@ def admin_delete_document(doc_id):
             storage_path = res.data[0]['file_path']
             # 2. Supabase Storage에서 실제 파일 삭제 (로컬 또는 스토리지 파일)
             try:
-                supabase.storage.from_('proposals').remove([storage_path])
+                supabase.storage.from_('documents').remove([storage_path])
             except Exception as storage_err:
                 print("스토리지 파일 삭제 경고:", storage_err)
                 
