@@ -473,12 +473,12 @@ def delete_notice(notice_id):
         
     return redirect(url_for('admin_dashboard'))
 
-# --- [사용자 전용 자료실(Vault) 페이지] ---
+# 1. 회원 전용 자료실 페이지
 @app.route('/vault')
 @login_required
 def vault():
     try:
-        # Supabase DB의 documents 테이블에서 문서 목록 가져오기
+        # Supabase에서 업로드된 문서 목록 가져오기
         response = supabase.table('documents').select("*").order('created_at', desc=True).execute()
         documents = response.data if response.data else []
     except Exception as e:
@@ -486,6 +486,19 @@ def vault():
         documents = []
         
     return render_template('vault.html', documents=documents)
+
+# --- [관리자: 자료실 관리 페이지 전용 라우트] ---
+@app.route('/dashboard/admin/documents', methods=['GET'])
+@admin_required
+def admin_documents_manage():
+    try:
+        response = supabase.table('documents').select("*").order('created_at', desc=True).execute()
+        documents = response.data if response.data else []
+    except Exception as e:
+        print("자료실 목록 조회 에러:", e)
+        documents = []
+        
+    return render_template('admin_documents.html', documents=documents)
 
 # --- [관리자: 자료실 문서 업로드 라우트 (Storage 연동)] ---
 @app.route('/admin/documents/upload', methods=['POST'])
