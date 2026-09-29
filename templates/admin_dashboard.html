@@ -65,7 +65,8 @@
                         <td class="small text-secondary">{{ doc.file_path }}</td>
                         <td class="small">{{ doc.created_at[:10] if doc.created_at else '' }}</td>
                         <td class="text-center">
-                            <form action="/admin/documents/delete/{{ doc.id }}" method="POST" class="d-inline" onsubmit="return confirm('정말 이 자료를 삭제하시겠습니까?');">
+                            <form action="/dashboard/admin/documents/delete/{{ doc.id }}" method="POST" class="d-inline" onsubmit="return confirm('정말 이 자료를 삭제하시겠습니까?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-outline-danger btn-sm px-2 py-1">삭제</button>
                             </form>
                         </td>
