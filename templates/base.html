@@ -37,6 +37,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/notices">뉴스룸</a>
                     </li>
+                    {% if session.get('user_id') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/documents">자료실</a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="/#inquiry">고객 문의</a>
                     </li>
