@@ -35,7 +35,7 @@
                         </div>
                         <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
                             <small class="text-muted" style="font-size: 0.8rem;">등록일: {{ doc.created_at[:10] if doc.created_at else '' }}</small>
-                            <a href="/{{ doc.file_path }}" class="btn btn-dark btn-sm px-3 fw-semibold rounded-pill" download>
+                            <a href="{{ url_for('download_vault_document', doc_id=doc.id) }}" class="btn btn-dark btn-sm px-3 fw-semibold rounded-pill">
                                 <i class="bi bi-download me-1"></i> 다운로드
                             </a>
                         </div>
