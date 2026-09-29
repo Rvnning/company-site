@@ -29,7 +29,7 @@ resend.api_key = os.environ.get("RESEND_API_KEY")
 def send_email_code(to_email, code):
     try:
         params = {
-            "from": "Cierra Energy <onboarding@resend.dev>",  # 또는 본인 인증된 도메인 이메일
+            "from": "Cierra Energy <cierraindustry@cierra.co.kr>",  # 또는 본인 인증된 도메인 이메일
             "to": [to_email],
             "subject": "[Cierra] 비밀번호 재설정 인증번호",
             "html": f"<p>안녕하세요, Cierra입니다.</p><p>요청하신 비밀번호 재설정 인증번호는 <b>[{code}]</b> 입니다.</p>"
@@ -92,7 +92,7 @@ def inquiry():
 
             if admin_email:
                 params = {
-                    "from": "Cierra Energy System <onboarding@resend.dev>",
+                    "from": "Cierra Energy System <cierraindustry@cierra.co.kr>",
                     "to": [admin_email],
                     "subject": f"[새로운 견적/제휴 문의] {company_name} ({manager_name} 님)",
                     "html": f"""
