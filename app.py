@@ -501,7 +501,7 @@ def admin_documents_manage():
     return render_template('admin_documents.html', documents=documents)
 
 # --- [관리자: 자료실 문서 업로드 라우트 (Storage 연동)] ---
-@app.route('/admin/documents/upload', methods=['POST'])
+@app.route('/dashboard/admin/documents/upload', methods=['POST'])
 @admin_required
 def admin_upload_document():
     title = request.form.get('title')
@@ -541,7 +541,7 @@ def admin_upload_document():
     return redirect(url_for('admin_documents_manage'))
 
 # --- [사용자/관리자 공용: 자료실 파일 다운로드 라우트] ---
-@app.route('/admin/documents/download/<doc_id>')
+@app.route('/dashboard/admin/documents/download/<doc_id>')
 @login_required
 def download_vault_document(doc_id):
     try:
@@ -571,7 +571,7 @@ def download_vault_document(doc_id):
         return redirect(url_for('vault'))
 
 # --- [관리자: 자료실 문서 삭제 라우트 (스토리지 파일 + DB 동시 삭제)] ---
-@app.route('/admin/documents/delete/<doc_id>', methods=['POST'])
+@app.route('/dashboard/admin/documents/delete/<doc_id>', methods=['POST'])
 @admin_required
 def admin_delete_document(doc_id):
     try:
