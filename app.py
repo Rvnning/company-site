@@ -331,16 +331,19 @@ def admin_dashboard():
     users_res = supabase.table('users').select("*").execute()
     inquiries_res = supabase.table('inquiries').select("*").order('created_at', desc=True).execute()
     notices_res = supabase.table('notices').select("*").order('created_at', desc=True).execute()
+    documents_res = supabase.table('documents').select("*").order('created_at', desc=True).execute()
 
     users_data = users_res.data if users_res.data else []
     inquiries_data = inquiries_res.data if inquiries_res.data else []
     notices_data = notices_res.data if notices_res.data else []
-    
+    documents_data = documents_res.data if documents_res.data else []
+
     return render_template(
         'admin_dashboard.html', 
         users=users_res.data, 
         inquiries=inquiries_res.data,
-        notices=notices_data
+        notices=notices_data,
+        documents=documents_data
     )
 
 @app.route('/dashboard/admin/add-user', methods=['GET', 'POST'])
@@ -472,12 +475,8 @@ def delete_notice(notice_id):
 
 # 1. 회원 전용 자료실 페이지
 @app.route('/vault')
+@login_required
 def vault():
-    # 로그인 여부 확인
-    if 'user_id' not in session:
-        flash('로그인 후 이용 가능한 서비스입니다.', 'warning')
-        return redirect(url_for('login'))
-    
     try:
         # Supabase에서 업로드된 문서 목록 가져오기
         response = supabase.table('documents').select("*").order('created_at', desc=True).execute()
@@ -488,16 +487,10 @@ def vault():
         
     return render_template('vault.html', documents=documents)
 
-# 2. 관리자용 문서 업로드 기능 (필요시 관리자 페이지와 연동)
-@app.route('/admin/upload-doc', methods=['GET', 'POST'])
-def upload_document():
-    # (선택) 관리자 권한 체크 로직이 있다면 추가
-    if 'user_id' not in session: # 간단한 로그인 체크 예시
-        return redirect(url_for('login'))
-        
-    if request.method == 'GET':
-        return render_template('admin_upload.html') # 업로드 폼 템플릿
-        
+# --- [관리자: 자료실 문서 업로드 라우트] ---
+@app.route('/admin/documents/upload', methods=['POST'])
+@admin_required
+def admin_upload_document():
     title = request.form.get('title')
     description = request.form.get('description')
     file = request.files.get('file')
@@ -510,17 +503,33 @@ def upload_document():
         file_path = os.path.join(upload_folder, filename)
         file.save(file_path)
         
-        # Supabase에 파일 정보 저장
-        supabase.table('documents').insert({
-            "title": title,
-            "description": description,
-            "file_path": f"static/uploads/{filename}"
-        }).execute()
+        try:
+            supabase.table('documents').insert({
+                "title": title,
+                "description": description,
+                "file_path": f"static/uploads/{filename}"
+            }).execute()
+            flash('자료가 성공적으로 업로드되었습니다.', 'success')
+        except Exception as e:
+            print("문서 DB 저장 에러:", e)
+            flash('자료 저장 중 오류가 발생했습니다.', 'danger')
+    else:
+        flash('제목과 파일을 모두 입력해 주세요.', 'warning')
         
-        flash('문서가 성공적으로 업로드되었습니다.', 'success')
-        return redirect(url_for('vault'))
+    return redirect(url_for('admin_dashboard'))
+
+# --- [관리자: 자료실 문서 삭제 라우트] ---
+@app.route('/admin/documents/delete/<doc_id>', methods=['POST'])
+@admin_required
+def admin_delete_document(doc_id):
+    try:
+        supabase.table('documents').delete().eq('id', doc_id).execute()
+        flash('자료가 삭제되었습니다.', 'success')
+    except Exception as e:
+        print("문서 삭제 에러:", e)
+        flash('자료 삭제 중 오류가 발생했습니다.', 'danger')
         
-    return redirect(url_for('upload_document'))
+    return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
