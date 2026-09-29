@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect
 from functools import wraps
 import random
@@ -468,6 +469,58 @@ def delete_notice(notice_id):
         flash('삭제 중 오류가 발생했습니다.', 'danger')
         
     return redirect(url_for('admin_dashboard'))
+
+# 1. 회원 전용 자료실 페이지
+@app.route('/vault')
+def vault():
+    # 로그인 여부 확인
+    if 'user_id' not in session:
+        flash('로그인 후 이용 가능한 서비스입니다.', 'warning')
+        return redirect(url_for('login'))
+    
+    try:
+        # Supabase에서 업로드된 문서 목록 가져오기
+        response = supabase.table('documents').select("*").order('created_at', desc=True).execute()
+        documents = response.data if response.data else []
+    except Exception as e:
+        print("자료실 조회 에러:", e)
+        documents = []
+        
+    return render_template('vault.html', documents=documents)
+
+# 2. 관리자용 문서 업로드 기능 (필요시 관리자 페이지와 연동)
+@app.route('/admin/upload-doc', methods=['GET', 'POST'])
+def upload_document():
+    # (선택) 관리자 권한 체크 로직이 있다면 추가
+    if 'user_id' not in session: # 간단한 로그인 체크 예시
+        return redirect(url_for('login'))
+        
+    if request.method == 'GET':
+        return render_template('admin_upload.html') # 업로드 폼 템플릿
+        
+    title = request.form.get('title')
+    description = request.form.get('description')
+    file = request.files.get('file')
+    
+    if title and file:
+        filename = secure_filename(file.filename)
+        upload_folder = os.path.join('static', 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        file_path = os.path.join(upload_folder, filename)
+        file.save(file_path)
+        
+        # Supabase에 파일 정보 저장
+        supabase.table('documents').insert({
+            "title": title,
+            "description": description,
+            "file_path": f"static/uploads/{filename}"
+        }).execute()
+        
+        flash('문서가 성공적으로 업로드되었습니다.', 'success')
+        return redirect(url_for('vault'))
+        
+    return redirect(url_for('upload_document'))
 
 if __name__ == '__main__':
     app.run(debug=True)

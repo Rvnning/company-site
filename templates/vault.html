@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}자료실 (File Vault) - Cierra Energy{% endblock %}
+
+{% block content %}
+<div class="container py-5 my-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="fw-bold">📁 기업 회원 전용 자료실</h2>
+            <p class="text-muted">씨에라에너지의 태양광 렌탈 제안서, RE100 대응 가이드 및 공식 문서를 다운로드하실 수 있습니다.</p>
+        </div>
+    </div>
+
+    <!-- 플래시 메시지 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show py-2 small" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row g-4">
+        {% if documents %}
+            {% for doc in documents %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+                    <div class="card-body d-flex flex-column">
+                        <div class="mb-3">
+                            <span class="badge bg-light text-primary fw-semibold px-2 py-1 mb-2">공식 문서</span>
+                            <h5 class="fw-bold text-dark">{{ doc.title }}</h5>
+                            <p class="text-muted small mt-2">{{ doc.description or '설명이 없습니다.' }}</p>
+                        </div>
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                            <small class="text-muted" style="font-size: 0.8rem;">등록일: {{ doc.created_at[:10] if doc.created_at else '' }}</small>
+                            <a href="/{{ doc.file_path }}" class="btn btn-dark btn-sm px-3 fw-semibold rounded-pill" download>
+                                <i class="bi bi-download me-1"></i> 다운로드
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">등록된 제안서 및 문서가 없습니다.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
