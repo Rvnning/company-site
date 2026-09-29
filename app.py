@@ -487,8 +487,21 @@ def vault():
         
     return render_template('vault.html', documents=documents)
 
+# --- [관리자: 자료실 관리 페이지 전용 라우트] ---
+@app.route('/dashboard/admin/documents', methods=['GET'])
+@admin_required
+def admin_documents_manage():
+    try:
+        response = supabase.table('documents').select("*").order('created_at', desc=True).execute()
+        documents = response.data if response.data else []
+    except Exception as e:
+        print("자료실 목록 조회 에러:", e)
+        documents = []
+        
+    return render_template('admin_documents.html', documents=documents)
+
 # --- [관리자: 자료실 문서 업로드 라우트] ---
-@app.route('/admin/documents/upload', methods=['POST'])
+@app.route('/dashboard/admin/documents/upload', methods=['POST'])
 @admin_required
 def admin_upload_document():
     title = request.form.get('title')
@@ -519,7 +532,7 @@ def admin_upload_document():
     return redirect(url_for('admin_dashboard'))
 
 # --- [관리자: 자료실 문서 삭제 라우트] ---
-@app.route('/admin/documents/delete/<doc_id>', methods=['POST'])
+@app.route('/dashboard/admin/documents/delete/<doc_id>', methods=['POST'])
 @admin_required
 def admin_delete_document(doc_id):
     try:
