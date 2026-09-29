@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}자료실 관리 - Cierra Energy Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5 my-4">
+    <!-- 상단 헤더 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">📁 기업 자료실(Vault) 관리</h2>
+            <p class="text-muted">회원 전용 자료실에 노출될 문서를 업로드하고 관리합니다.</p>
+        </div>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary btn-sm px-3">
+            <i class="bi bi-arrow-left me-1"></i> 관리자 홈으로
+        </a>
+    </div>
+
+    <!-- 플래시 메시지 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show py-2 small" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- 1. 자료 업로드 폼 -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-cloud-arrow-up me-2"></i>새 자료 업로드</h5>
+        <form action="/admin/documents/upload" method="POST" enctype="multipart/form-data" class="row g-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">문서 제목</label>
+                <input type="text" class="form-control" name="title" placeholder="예: 2026 태양광 렌탈 제안서" required>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small fw-semibold">설명</label>
+                <input type="text" class="form-control" name="description" placeholder="간단한 문서 설명 입력">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">파일 첨부 (PDF 등)</label>
+                <input type="file" class="form-control" name="file" required>
+            </div>
+            <div class="col-12 text-end mt-3">
+                <button type="submit" class="btn btn-primary px-4 fw-semibold">업로드 하기</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 2. 등록된 자료 목록 및 삭제 테이블 -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-text me-2"></i>등록된 자료 목록</h5>
+        <div class="table-responsive">
+            <table class="table align-middle table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>제목</th>
+                        <th>설명</th>
+                        <th>파일명</th>
+                        <th>등록일</th>
+                        <th class="text-center">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if documents %}
+                        {% for doc in documents %}
+                        <tr>
+                            <td class="fw-semibold">{{ doc.title }}</td>
+                            <td class="text-muted small">{{ doc.description or '-' }}</td>
+                            <td class="small text-secondary">{{ doc.file_path }}</td>
+                            <td class="small">{{ doc.created_at[:10] if doc.created_at else '' }}</td>
+                            <td class="text-center">
+                                <form action="/admin/documents/delete/{{ doc.id }}" method="POST" class="d-inline" onsubmit="return confirm('정말 이 자료를 삭제하시겠습니까?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm px-2 py-1">삭제</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">등록된 자료가 없습니다.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
