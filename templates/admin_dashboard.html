@@ -4,8 +4,8 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-12 d-flex justify-content-between align-items-center">
-        <h2>관리자 대시보드</h2>
-        <a href="/logout" class="btn btn-outline-danger btn-sm">로그아웃</a>
+        <h2 class="fs-3 fs-md-2 fw-bold mb-0">관리자 대시보드</h2>
+        <a href="/logout" class="btn btn-outline-danger btn-sm text-nowrap">로그아웃</a>
     </div>
 </div>
 
@@ -14,15 +14,15 @@
     <div class="card-header bg-primary text-white rounded-top-4 py-3">
         <h5 class="mb-0">📄 회사 소개서(제안서) 파일 관리</h5>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-3 p-md-4">
         <p class="text-muted small mb-3">
             홈페이지 방문자들이 다운로드하는 회사 소개서(PDF) 파일을 최신 버전으로 교체할 수 있습니다. 새로운 PDF 파일을 업로드하면 기존 파일이 자동으로 갱신됩니다.
         </p>
         
-        <form action="/dashboard/admin/upload-proposal" method="POST" enctype="multipart/form-data" class="row align-items-center">
+        <form action="/dashboard/admin/upload-proposal" method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
-            <div class="col-md-8 mb-3 mb-md-0">
+            <div class="col-md-8 mb-2 mb-md-0">
                 <input type="file" class="form-control" name="proposal_file" accept=".pdf" required>
             </div>
             <div class="col-md-4">
@@ -33,20 +33,20 @@
 </div>
 
 <!-- 관리자 대시보드 내부의 자료실 관리 섹션  -->
-<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
-    <div class="d-flex justify-content-between align-items-center">
+<div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4 bg-white">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
         <div>
-            <h4 class="fw-bold mb-1">📁 기업 회원 자료실(Vault) 관리</h4>
+            <h4 class="fw-bold mb-1 fs-5 fs-md-4">📁 기업 회원 자료실(Vault) 관리</h4>
             <p class="text-muted small mb-0">기업 회원 전용 제안서 및 문서의 업로드, 삭제 및 현황을 관리합니다.</p>
         </div>
-        <a href="{{ url_for('admin_documents_manage') }}" class="btn btn-primary px-4 fw-semibold">
+        <a href="{{ url_for('admin_documents_manage') }}" class="btn btn-primary px-4 fw-semibold text-nowrap">
             자료실 관리 바로가기 <i class="bi bi-arrow-right ms-1"></i>
         </a>
     </div>
 
     <!-- 등록된 자료 목록 테이블 -->
     <div class="table-responsive">
-        <table class="table align-middle table-hover">
+        <table class="table align-middle table-hover text-nowrap text-md-wrap">
             <thead class="table-light">
                 <tr>
                     <th>제목</th>
@@ -83,13 +83,13 @@
 </div>
 
 <!-- 관리자 대시보드 내 공지사항 관리 섹션 -->
-<div class="card shadow-sm mb-5">
+<div class="card shadow-sm mb-5 border-0 rounded-4">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0">📢 공지사항 및 뉴스룸 관리</h5>
-        <a href="/dashboard/admin/notices/add" class="btn btn-light btn-sm fw-semibold shadow-sm">➕ 새 글 작성하기</a>
+        <a href="/dashboard/admin/notices/add" class="btn btn-light btn-sm fw-semibold shadow-sm text-nowrap">➕ 새 글 작성하기</a>
     </div>
-    <div class="card-body table-responsive">
-        <table class="table table-hover align-middle">
+    <div class="card-body p-3 p-md-4 table-responsive">
+        <table class="table table-hover align-middle text-nowrap text-md-wrap">
             <thead>
                 <tr>
                     <th>번호</th>
@@ -100,7 +100,6 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- app.py의 admin_dashboard 라우트에서 notices 데이터를 함께 렌더링하도록 전달해 주어야 합니다 -->
                 {% for item in notices %}
                 <tr>
                     <td>{{ item.id }}</td>
@@ -125,12 +124,12 @@
 </div>
 
 <!-- 고객 문의 내역 관리 테이블 -->
-<div class="card shadow-sm mb-5">
+<div class="card shadow-sm mb-5 border-0 rounded-4">
     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0">📥 고객 문의 및 상담 신청 내역</h5>
         <span class="badge bg-light text-dark">실시간 접수 현황</span>
     </div>
-    <div class="card-body table-responsive">
+    <div class="card-body p-3 p-md-4 table-responsive">
         <table class="table table-hover align-middle">
             <thead>
                 <tr>
@@ -180,12 +179,12 @@
 </div>
 
 <!-- 오프라인 가입 회원 목록 테이블 -->
-<div class="card shadow-sm">
+<div class="card shadow-sm border-0 rounded-4">
     <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0">👥 등록된 기업 회원(Users) 목록</h5>
-        <a href="/dashboard/admin/add-user" class="btn btn-light btn-sm fw-semibold shadow-sm">➕ 회원 추가하기</a>
+        <a href="/dashboard/admin/add-user" class="btn btn-light btn-sm fw-semibold shadow-sm text-nowrap">➕ 회원 추가하기</a>
     </div>
-    <div class="card-body table-responsive">
+    <div class="card-body p-3 p-md-4 table-responsive">
         <table class="table table-hover align-middle">
             <thead>
                 <tr>
@@ -210,7 +209,6 @@
                     </td>
                     <td>{{ user.created_at[:10] if user.created_at else '-' }}</td>
                     <td class="text-center">
-                        <!-- 실수로 클릭하는 것을 방지하기 위한 간단한 자바스크립트 확인창 적용 -->
                         <form action="/dashboard/admin/delete-user/{{ user.id }}" method="POST" class="d-inline" onsubmit="return confirm('정말 이 회원을 삭제하시겠습니까?');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-outline-danger btn-sm">삭제</button>
