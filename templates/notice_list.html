@@ -2,11 +2,11 @@
 {% block title %}뉴스룸 & 공지사항 - Cierra Energy{% endblock %}
 
 {% block content %}
-<div class="container py-5 my-4">
-    <div class="text-center mb-5">
+<div class="container py-3 py-md-5 my-md-4">
+    <div class="text-center mb-4 mb-md-5">
         <span class="text-primary fw-semibold text-uppercase tracking-wide">News & Notices</span>
-        <h2 class="fw-bold display-6 mt-1">Cierra Newsroom</h2>
-        <p class="text-muted mt-2">Cierra의 주요 소식과 최신 RE100·태양광 정책 동향을 전해드립니다.</p>
+        <h2 class="fs-3 fs-md-2 fw-bold mt-1">Cierra Newsroom</h2>
+        <p class="text-muted mt-2 small fs-md-6">Cierra의 주요 소식과 최신 RE100·태양광 정책 동향을 전해드립니다.</p>
     </div>
 
     <div class="row justify-content-center">
@@ -14,7 +14,7 @@
             <div class="list-group shadow-sm rounded-4 overflow-hidden border-0">
                 {% for item in notices %}
                 <a href="/notices/{{ item.id }}" 
-                    class="list-group-item list-group-item-action p-4 border-bottom" 
+                    class="list-group-item list-group-item-action p-3 p-md-4 border-bottom" 
                     {% if item.link_url %}target="_blank"{% endif %}> <!-- 링크 뉴스인 경우 새 창으로 열기 -->
                 
                     <div class="d-flex w-100 justify-content-between align-items-center mb-2">
@@ -27,7 +27,7 @@
                         <small class="text-muted">{{ item.created_at[:10] }}</small>
                     </div>
                     
-                    <h5 class="mb-2 fw-bold text-dark">
+                    <h5 class="mb-2 fw-bold text-dark fs-6 fs-md-5">
                         {{ item.title }} 
                         {% if item.link_url %}<span class="text-primary small">↗</span>{% endif %}
                     </h5>

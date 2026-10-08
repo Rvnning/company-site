@@ -2,16 +2,16 @@
 {% block title %}마이페이지 - Cierra Energy{% endblock %}
 
 {% block content %}
-<div class="container py-5 my-4">
+<div class="container py-3 py-md-5 my-md-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <!-- 상단 헤더 및 로그아웃 버튼 -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 class="fw-bold">👤 기업 회원 마이페이지</h2>
+                    <h2 class="fs-4 fs-md-2 fw-bold mb-1">👤 기업 회원 마이페이지</h2>
                     <p class="text-muted small mb-0">Cierra Energy 서비스 이용 회원 정보 관리</p>
                 </div>
-                <a href="/logout" class="btn btn-outline-danger btn-sm">로그아웃</a>
+                <a href="/logout" class="btn btn-outline-danger btn-sm text-nowrap">로그아웃</a>
             </div>
 
             <!-- 플래시 메시지 -->
@@ -27,8 +27,8 @@
             {% endwith %}
 
             <!-- 회원 정보 수정 카드 -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <div class="card-body">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white">
+                <div class="card-body p-0">
                     <form action="/dashboard/user" method="POST">
                         <!-- CSRF 토큰 -->
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -58,7 +58,7 @@
 
                         <!-- 기존 회사명, 연락처, 이메일 입력 폼 아래쪽에 추가 -->
                         <hr class="my-4 text-muted">
-                        <h5 class="fw-bold mb-3">🔒 비밀번호 변경 <span class="text-muted small fw-normal">(변경할 때만 입력하세요)</span></h5>
+                        <h5 class="fw-bold mb-3 fs-5 fs-md-4">🔒 비밀번호 변경 <span class="text-muted small fw-normal">(변경할 때만 입력하세요)</span></h5>
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">현재 비밀번호</label>
@@ -79,7 +79,7 @@
             </div>
 
             <!-- 하단 안내 박스 -->
-            <div class="card border-0 bg-light rounded-4 p-4 mt-4">
+            <div class="card border-0 bg-light rounded-4 p-3 p-md-4 mt-4">
                 <h6 class="fw-bold mb-2">💡 안내 사항</h6>
                 <p class="text-muted small mb-0 lh-base">
                     태양광 지붕 임대 컨설팅 진행 상황이나 추가 서류 제출과 관련하여 문의 사항이 있으신 경우, 메인 페이지의 고객 문의를 이용해 주시거나 관리자에게 직접 연락해 주세요.

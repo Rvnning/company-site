@@ -30,7 +30,7 @@ resend.api_key = os.environ.get("RESEND_API_KEY")
 def send_email_code(to_email, code):
     try:
         params = {
-            "from": "Cierra Energy <cierraindustry@cierra.co.kr>",  # 또는 본인 인증된 도메인 이메일
+            "from": "Cierra Energy <cierraindustry@cierra.co.kr>",
             "to": [to_email],
             "subject": "[Cierra] 비밀번호 재설정 인증번호",
             "html": f"<p>안녕하세요, Cierra입니다.</p><p>요청하신 비밀번호 재설정 인증번호는 <b>[{code}]</b> 입니다.</p>"
@@ -71,7 +71,6 @@ def index():
 
 @app.route('/inquiry', methods=['POST'])
 def inquiry():
-    # 고객 문의 데이터 수집 후 Supabase 'inquiries' 테이블에 저장
     company_name = request.form.get('company_name')
     manager_name = request.form.get('manager_name')
     phone = request.form.get('phone')
@@ -87,8 +86,7 @@ def inquiry():
                 "email": email,
                 "content": content
             }).execute()
-            # 2. 💡 관리자에게 Resend를 통한 실시간 이메일 알림 발송
-            # MAIL_USERNAME(또는 별도의 관리자 수신 이메일)로 알림 발송
+            
             admin_email = os.environ.get("MAIL_USERNAME")
 
             if admin_email:
@@ -129,7 +127,6 @@ def update_inquiry_status(inquiry_id):
     
     if new_status:
         try:
-            # Supabase inquiries 테이블의 status 업데이트
             supabase.table('inquiries').update({"status": new_status}).eq('id', inquiry_id).execute()
             flash('문의 처리 상태가 변경되었습니다.', 'success')
         except Exception as e:
@@ -137,8 +134,6 @@ def update_inquiry_status(inquiry_id):
             flash('상태 변경 중 오류가 발생했습니다.', 'danger')
             
     return redirect(url_for('admin_dashboard'))
-
-import io
 
 # --- [관리자: 제안서 파일 업로드 라우트] ---
 @app.route('/dashboard/admin/upload-proposal', methods=['POST'])
@@ -149,9 +144,8 @@ def upload_proposal():
     if file and file.filename:
         try:
             file_bytes = file.read()
-            file_name = "cierra_proposal.pdf"  # 항상 최신 파일명으로 고정하여 덮어쓰기
+            file_name = "cierra_proposal.pdf"
             
-            # Supabase Storage의 proposals 버킷에 업로드 (upsert=true로 기존 파일 덮어쓰기)
             supabase.storage.from_('proposals').upload(
                 path=file_name,
                 file=file_bytes,
@@ -171,7 +165,6 @@ def upload_proposal():
 @app.route('/download-proposal')
 def download_proposal():
     try:
-        # Supabase Storage에서 제안서 파일 바이트 데이터 가져오기
         file_data = supabase.storage.from_('proposals').download('cierra_proposal.pdf')
         
         return send_file(
@@ -193,13 +186,10 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        # Supabase users 테이블에서 사용자 조회
         response = supabase.table('users').select("*").eq('username', username).execute()
         users = response.data
         
-        # 평문 비교 대신 해시 검증 함수(check_password_hash) 사용
         if users and check_password_hash(users[0]['password_hash'], password):
-            # 로그인 성공 시 세션 부여
             session['user_id'] = users[0]['id']
             session['username'] = users[0]['username']
             session['role'] = users[0]['role']
@@ -214,31 +204,26 @@ def login():
             
     return render_template('login.html')
 
-# 1. 인증번호 이메일 발송 API (AJAX 요청용)
 @app.route('/send-auth-email', methods=['POST'])
 def send_auth_email():
     username = request.form.get('username')
     email = request.form.get('email')
     
-    # 해당 아이디와 이메일이 일치하는 회원이 있는지 확인
     res = supabase.table('users').select("*").eq('username', username).eq('email', email).execute()
     if not res.data:
         return {"success": False, "message": "일치하는 아이디와 이메일 정보를 찾을 수 없습니다."}, 400
         
-    # 6자리 랜덤 인증번호 생성 및 세션 저장
     auth_code = str(random.randint(100000, 999999))
     session['reset_username'] = username
     session['reset_email'] = email
     session['reset_code'] = auth_code
     
-    # 이메일 발송 실행
     success = send_email_code(email, auth_code)
     if success:
         return {"success": True, "message": "인증번호가 이메일로 발송되었습니다."}
     else:
         return {"success": False, "message": "이메일 발송에 실패했습니다. 관리자에게 문의하세요."}, 500
 
-# 2. 인증번호 확인 및 비밀번호 변경 처리
 @app.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
@@ -249,7 +234,6 @@ def reset_password():
     user_code = request.form.get('auth_code')
     new_password = request.form.get('new_password')
     
-    # 세션에 저장된 인증 정보와 사용자가 입력한 정보 대조
     if (session.get('reset_username') == username and 
         session.get('reset_email') == email and 
         session.get('reset_code') == user_code):
@@ -257,7 +241,6 @@ def reset_password():
         new_password_hash = generate_password_hash(new_password)
         supabase.table('users').update({"password_hash": new_password_hash}).eq('username', username).execute()
         
-        # 사용 완료된 세션 정리
         session.pop('reset_username', None)
         session.pop('reset_email', None)
         session.pop('reset_code', None)
@@ -273,10 +256,8 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-
 # --- [대시보드 페이지 라우팅] ---
 
-# --- [일반 회원 마이페이지 라우트] ---
 @app.route('/dashboard/user', methods=['GET', 'POST'])
 @login_required
 def user_dashboard():
@@ -296,18 +277,14 @@ def user_dashboard():
         }
         
         try:
-            # 2. 비밀번호 변경을 시도하는 경우
             if current_password and new_password:
-                # 현재 로그인된 유저의 기존 비밀번호 해시 가져오기
                 res = supabase.table('users').select("password_hash").eq('id', user_id).execute()
                 if res.data and check_password_hash(res.data[0]['password_hash'], current_password):
-                    # 현재 비밀번호가 일치하면 새 비밀번호 해시 생성 후 업데이트 대상에 추가
                     update_data["password_hash"] = generate_password_hash(new_password)
                 else:
                     flash('현재 비밀번호가 일치하지 않습니다. 비밀번호 변경은 실패했습니다.', 'danger')
                     return redirect(url_for('user_dashboard'))
             
-            # 3. Supabase 업데이트 실행
             supabase.table('users').update(update_data).eq('id', user_id).execute()
             
             session['company_name'] = company_name
@@ -318,7 +295,6 @@ def user_dashboard():
             
         return redirect(url_for('user_dashboard'))
     
-    # GET 요청 시 현재 회원의 최신 정보를 Supabase에서 조회
     response = supabase.table('users').select("*").eq('id', user_id).execute()
     user_info = response.data[0] if response.data else {}
     
@@ -327,23 +303,17 @@ def user_dashboard():
 @app.route('/dashboard/admin')
 @admin_required
 def admin_dashboard():
-    # 관리자 대시보드: 오프라인 가입 회원 목록과 고객 문의 내역 조회
     users_res = supabase.table('users').select("*").execute()
     inquiries_res = supabase.table('inquiries').select("*").order('created_at', desc=True).execute()
     notices_res = supabase.table('notices').select("*").order('created_at', desc=True).execute()
     documents_res = supabase.table('documents').select("*").order('created_at', desc=True).execute()
-
-    users_data = users_res.data if users_res.data else []
-    inquiries_data = inquiries_res.data if inquiries_res.data else []
-    notices_data = notices_res.data if notices_res.data else []
-    documents_data = documents_res.data if documents_res.data else []
 
     return render_template(
         'admin_dashboard.html', 
         users=users_res.data, 
         inquiries=inquiries_res.data,
         notices=notices_data,
-        documents=documents_data
+        documents=documents_res.data
     )
 
 @app.route('/dashboard/admin/add-user', methods=['GET', 'POST'])
@@ -352,7 +322,6 @@ def add_user():
     if request.method == 'GET':
         return render_template('add_user.html')
     
-    # POST 요청 시 기존 회원 등록 로직 수행
     username = request.form.get('username')
     password = request.form.get('password')
     company_name = request.form.get('company_name')
@@ -368,7 +337,6 @@ def add_user():
             "role": role
         }
         
-        # 동적으로 추가된 폼 필드(전화번호, 이메일 등) 자동 수집
         excluded_keys = ['username', 'password', 'company_name', 'role', 'csrf_token']
         for key, value in request.form.items():
             if key not in excluded_keys and value.strip():
@@ -388,7 +356,6 @@ def add_user():
 @admin_required
 def delete_user(user_id):
     try:
-        # Supabase users 테이블에서 해당 ID의 회원 삭제
         supabase.table('users').delete().eq('id', user_id).execute()
         flash('회원이 성공적으로 삭제되었습니다.', 'success')
     except Exception as e:
@@ -418,21 +385,6 @@ def notice_detail(notice_id):
 
     return render_template('notice_detail.html', notice=notice)
 
-    # try:
-    #     supabase.table('notices').insert({
-    #         "title": title,
-    #         "category": category,
-    #         "content": content,
-    #         "link_url": link_url if link_url else None
-    #     }).execute()
-    #     flash('공지사항이 성공적으로 등록되었습니다.', 'success')
-    #     return redirect(url_for('admin_dashboard'))
-    # except Exception as e:
-    #     print("공지사항 등록 에러:", e)
-    #     flash('등록 중 오류가 발생했습니다.', 'danger')
-            
-    return redirect(url_for('add_notice'))
-
 @app.route('/dashboard/admin/notices/add', methods=['GET', 'POST'])
 @admin_required
 def add_notice():
@@ -441,8 +393,8 @@ def add_notice():
     
     title = request.form.get('title')
     category = request.form.get('category', '공지사항')
-    content = request.form.get('content', '') # 링크 뉴스일 경우 본문은 비워둘 수 있음
-    link_url = request.form.get('link_url', '').strip() # 뉴스 외부 링크
+    content = request.form.get('content', '')
+    link_url = request.form.get('link_url', '').strip()
     
     if title:
         try:
@@ -473,12 +425,10 @@ def delete_notice(notice_id):
         
     return redirect(url_for('admin_dashboard'))
 
-# 1. 회원 전용 자료실 페이지
 @app.route('/documents')
 @login_required
 def documents():
     try:
-        # Supabase에서 업로드된 문서 목록 가져오기
         response = supabase.table('documents').select("*").order('created_at', desc=True).execute()
         documents = response.data if response.data else []
     except Exception as e:
@@ -487,7 +437,6 @@ def documents():
         
     return render_template('documents.html', documents=documents)
 
-# --- [관리자: 자료실 관리 페이지 전용 라우트] ---
 @app.route('/dashboard/admin/documents', methods=['GET'])
 @admin_required
 def admin_documents_manage():
@@ -500,7 +449,6 @@ def admin_documents_manage():
         
     return render_template('admin_documents.html', documents=documents)
 
-# --- [관리자: 자료실 문서 업로드 라우트 (Storage 연동)] ---
 @app.route('/dashboard/admin/documents/upload', methods=['POST'])
 @admin_required
 def admin_upload_document():
@@ -513,8 +461,6 @@ def admin_upload_document():
             filename = secure_filename(file.filename)
             file_bytes = file.read()
             
-            # 1. Supabase Storage의 'documents'(또는 문서용 버킷)에 실제 파일 업로드
-            # 고유한 파일명 유지를 위해 경로 설정 (예: documents/현재시간_파일명)
             import time
             storage_path = f"documents_docs/{int(time.time())}_{filename}"
             
@@ -524,11 +470,10 @@ def admin_upload_document():
                 file_options={"upsert": "false", "content-type": "application/pdf"}
             )
             
-            # 2. Supabase DB의 'documents' 테이블에는 스토리지 경로(storage_path) 저장
             supabase.table('documents').insert({
                 "title": title,
                 "description": description,
-                "file_path": storage_path  # 스토리지 내부 경로 저장
+                "file_path": storage_path
             }).execute()
             
             flash('자료가 스토리지에 안전하게 업로드되었습니다.', 'success')
@@ -540,12 +485,10 @@ def admin_upload_document():
         
     return redirect(url_for('admin_documents_manage'))
 
-# --- [사용자/관리자 공용: 자료실 파일 다운로드 라우트] ---
 @app.route('/dashboard/admin/documents/download/<doc_id>')
 @login_required
 def download_vault_document(doc_id):
     try:
-        # 1. DB에서 해당 문서의 스토리지 경로 조회
         res = supabase.table('documents').select("*").eq('id', doc_id).execute()
         if not res.data:
             flash('존재하지 않는 문서입니다.', 'warning')
@@ -555,10 +498,8 @@ def download_vault_document(doc_id):
         storage_path = doc['file_path']
         title = doc['title']
         
-        # 2. Supabase Storage에서 파일 바이트 다운로드
         file_data = supabase.storage.from_('documents').download(storage_path)
         
-        # 3. 브라우저로 안전하게 PDF 파일 전송 (다운로드 처리)
         return send_file(
             io.BytesIO(file_data),
             mimetype='application/pdf',
@@ -570,22 +511,18 @@ def download_vault_document(doc_id):
         flash('파일 다운로드 중 오류가 발생했습니다.', 'warning')
         return redirect(url_for('documents'))
 
-# --- [관리자: 자료실 문서 삭제 라우트 (스토리지 파일 + DB 동시 삭제)] ---
 @app.route('/dashboard/admin/documents/delete/<doc_id>', methods=['POST'])
 @admin_required
 def admin_delete_document(doc_id):
     try:
-        # 1. 삭제할 문서의 스토리지 경로 확인
         res = supabase.table('documents').select("file_path").eq('id', doc_id).execute()
         if res.data:
             storage_path = res.data[0]['file_path']
-            # 2. Supabase Storage에서 실제 파일 삭제 (로컬 또는 스토리지 파일)
             try:
                 supabase.storage.from_('documents').remove([storage_path])
             except Exception as storage_err:
                 print("스토리지 파일 삭제 경고:", storage_err)
                 
-        # 3. DB에서 데이터 삭제
         supabase.table('documents').delete().eq('id', doc_id).execute()
         flash('자료가 성공적으로 삭제되었습니다.', 'success')
     except Exception as e:
