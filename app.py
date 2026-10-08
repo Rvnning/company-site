@@ -138,8 +138,6 @@ def update_inquiry_status(inquiry_id):
             
     return redirect(url_for('admin_dashboard'))
 
-import io
-
 # --- [관리자: 제안서 파일 업로드 라우트] ---
 @app.route('/dashboard/admin/upload-proposal', methods=['POST'])
 @admin_required
@@ -273,9 +271,6 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-
-# --- [대시보드 페이지 라우팅] ---
-
 # --- [일반 회원 마이페이지 라우트] ---
 @app.route('/dashboard/user', methods=['GET', 'POST'])
 @login_required
@@ -340,8 +335,8 @@ def admin_dashboard():
 
     return render_template(
         'admin_dashboard.html', 
-        users=users_res.data, 
-        inquiries=inquiries_res.data,
+        users=users_data, 
+        inquiries=inquiries_data,
         notices=notices_data,
         documents=documents_data
     )
@@ -417,8 +412,6 @@ def notice_detail(notice_id):
         return redirect(notice['link_url'])
 
     return render_template('notice_detail.html', notice=notice)
-            
-    return redirect(url_for('add_notice'))
 
 @app.route('/dashboard/admin/notices/add', methods=['GET', 'POST'])
 @admin_required
