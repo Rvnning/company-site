@@ -4,3 +4,4 @@ supabase
 Flask-WTF
 gunicorn
 resend
+Flask-Limiter

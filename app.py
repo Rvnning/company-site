@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask import jsonify
 from functools import wraps
 import random
 import resend
@@ -14,6 +17,14 @@ import resend
 load_dotenv()
 
 app = Flask(__name__)
+
+# Flask-Limiter 설정 (메모리 기반, 접속 IP 기준)
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"], # 전체 기본 제한
+    storage_uri="memory://"
+)
 
 # 보안 설정 (Flask 세션 암호화 및 CSRF 방지)
 app.secret_key = os.environ.get("SECRET_KEY", "default-fallback-secret-key")
@@ -70,6 +81,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/inquiry', methods=['POST'])
+@limiter.limit("5 per hour")
 def inquiry():
     # 고객 문의 데이터 수집 후 Supabase 'inquiries' 테이블에 저장
     company_name = request.form.get('company_name')
@@ -186,6 +198,7 @@ def download_proposal():
 # --- [로그인 및 인증 라우팅] ---
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=['POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -214,6 +227,7 @@ def login():
 
 # 1. 인증번호 이메일 발송 API (AJAX 요청용)
 @app.route('/send-auth-email', methods=['POST'])
+@limiter.limit("3 per minute")
 def send_auth_email():
     username = request.form.get('username')
     email = request.form.get('email')
@@ -573,6 +587,11 @@ def admin_delete_document(doc_id):
         flash('자료 삭제 중 오류가 발생했습니다.', 'danger')
         
     return redirect(url_for('admin_documents_manage'))
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    flash('너무 많은 요청을 짧은 시간 내에 보냈습니다. 잠시 후 다시 시도해 주세요.', 'warning')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
