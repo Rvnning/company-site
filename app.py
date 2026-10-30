@@ -27,7 +27,16 @@ limiter = Limiter(
 )
 
 # 보안 설정 (Flask 세션 암호화 및 CSRF 방지)
-app.secret_key = os.environ.get("SECRET_KEY", "default-fallback-secret-key")
+# 하드코딩된 대체 비밀키는 사용하지 않는다. 없거나 비어 있으면 시작을 거부한다.
+_secret_key = os.environ.get("SECRET_KEY")
+if not _secret_key or not _secret_key.strip():
+    raise RuntimeError(
+        "SECRET_KEY is missing or empty. "
+        "Set a non-empty SECRET_KEY environment variable before starting the app. "
+        "SECRET_KEY 환경 변수가 없거나 비어 있으면 앱을 시작하지 않습니다. "
+        "하드코딩된 기본 비밀키는 사용하지 않습니다."
+    )
+app.secret_key = _secret_key
 csrf = CSRFProtect(app)
 
 # 2. Supabase 클라이언트 초기화
