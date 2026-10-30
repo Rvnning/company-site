@@ -87,6 +87,26 @@ def login_required(f):
 
 # --- [공개 페이지 라우팅] ---
 
+# favicon.ico만 일주일 캐시. 다른 정적 파일은 기본값(no-cache, 조건부 요청)을 유지한다.
+_original_get_send_file_max_age = app.get_send_file_max_age
+
+def _get_send_file_max_age(filename):
+    if filename == 'favicon.ico':
+        return 604800
+    return _original_get_send_file_max_age(filename)
+
+app.get_send_file_max_age = _get_send_file_max_age
+
+@app.route('/favicon.ico')
+@limiter.exempt
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon',
+        max_age=604800,
+    )
+
 @app.route('/')
 def index():
     return render_template('index.html')
