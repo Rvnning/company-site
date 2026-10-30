@@ -1,3 +1,4 @@
+import html
 import io
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, send_file, flash
@@ -37,6 +38,16 @@ supabase: Client = create_client(url, key)
 
 # Resend API 키 설정
 resend.api_key = os.environ.get("RESEND_API_KEY")
+
+def escape_email_text(value):
+    """공개 폼 입력값을 알림 메일 HTML에 넣기 전에 이스케이프한다.
+
+    줄바꿈은 <br>로 유지하고, 한글 등 나머지 문자는 그대로 둔다.
+    """
+    if value is None:
+        return ""
+    escaped = html.escape(str(value), quote=True)
+    return escaped.replace("\r\n", "<br>").replace("\n", "<br>").replace("\r", "<br>")
 
 def send_email_code(to_email, code):
     try:
@@ -104,6 +115,11 @@ def inquiry():
             admin_email = os.environ.get("MAIL_USERNAME")
 
             if admin_email:
+                safe_company_name = escape_email_text(company_name)
+                safe_manager_name = escape_email_text(manager_name)
+                safe_phone = escape_email_text(phone)
+                safe_email = escape_email_text(email) if email else "미입력"
+                safe_content = escape_email_text(content)
                 params = {
                     "from": "Cierra Energy System <cierraindustry@cierra.co.kr>",
                     "to": [admin_email],
@@ -113,14 +129,14 @@ def inquiry():
                             <h2 style="color: #0d6efd; margin-top: 0;">⚡ 씨에라에너지 새로운 고객 문의</h2>
                             <p>웹사이트를 통해 새로운 태양광·RE100 관련 문의가 접수되었습니다.</p>
                             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                            <p><b>🏢 회사명:</b> {company_name}</p>
-                            <p><b>👤 담당자명:</b> {manager_name}</p>
-                            <p><b>📞 연락처:</b> {phone}</p>
-                            <p><b>📧 이메일:</b> {email if email else '미입력'}</p>
+                            <p><b>🏢 회사명:</b> {safe_company_name}</p>
+                            <p><b>👤 담당자명:</b> {safe_manager_name}</p>
+                            <p><b>📞 연락처:</b> {safe_phone}</p>
+                            <p><b>📧 이메일:</b> {safe_email}</p>
                             <br>
                             <p><b>📝 문의 내용:</b></p>
                             <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; color: #333; line-height: 1.5;">
-                                {content.replace(chr(10), '<br>')}
+                                {safe_content}
                             </div>
                         </div>
                     """
