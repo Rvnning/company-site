@@ -80,36 +80,38 @@ def login_required(f):
 def index():
     return render_template('index.html')
 
-@app.route('/inquiry', methods=['POST'])
-@limiter.limit("5 per hour")
-def inquiry():
-    # 고객 문의 데이터 수집 후 Supabase 'inquiries' 테이블에 저장
-    company_name = request.form.get('company_name')
-    manager_name = request.form.get('manager_name')
-    phone = request.form.get('phone')
-    email = request.form.get('email')
-    content = request.form.get('content')
-    
-    if company_name and manager_name and phone and content:
-        try:
-            supabase.table('inquiries').insert({
-                "company_name": company_name,
-                "manager_name": manager_name,
-                "phone": phone,
-                "email": email,
-                "content": content
-            }).execute()
-            # 2. 💡 관리자에게 Resend를 통한 실시간 이메일 알림 발송
-            # MAIL_USERNAME(또는 별도의 관리자 수신 이메일)로 알림 발송
-            admin_email = os.environ.get("MAIL_USERNAME")
+# 푸터에 공개된 대체 연락처. DB와 알림 메일이 모두 실패할 때 방문자에게 안내한다.
+INQUIRY_FALLBACK_CONTACT = "contact@cierra.kr"
 
-            if admin_email:
-                params = {
-                    "from": "Cierra Energy System <cierraindustry@cierra.co.kr>",
-                    "to": [admin_email],
-                    "subject": f"[새로운 견적/제휴 문의] {company_name} ({manager_name} 님)",
-                    "html": f"""
+
+def _send_inquiry_notification(company_name, manager_name, phone, email, content, db_saved):
+    """담당자 알림 메일을 보낸다. 발송에 성공하면 True.
+
+    DB 저장이 실패한 경우 제목과 본문에 그 사실을 표시한다. 이 메일이 유일한 접수 기록이 되기 때문이다.
+    """
+    admin_email = os.environ.get("MAIL_USERNAME")
+    if not admin_email:
+        app.logger.error("문의 알림 메일을 보내지 못했습니다. MAIL_USERNAME이 없습니다.")
+        return False
+
+    subject = f"[새로운 견적/제휴 문의] {company_name} ({manager_name} 님)"
+    db_warning = ""
+    if not db_saved:
+        subject = f"[DB 저장 실패] {subject}"
+        db_warning = """
+                            <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 12px 14px; border-radius: 6px; margin-bottom: 16px;">
+                                <p style="margin: 0;"><b>⚠️ DB 저장 실패</b></p>
+                                <p style="margin: 8px 0 0;">이 문의는 데이터베이스에 저장되지 않았습니다. 아래 내용이 유일한 접수 기록입니다. 수동으로 확인해 주세요.</p>
+                            </div>
+        """
+
+    params = {
+        "from": "Cierra Energy System <cierraindustry@cierra.co.kr>",
+        "to": [admin_email],
+        "subject": subject,
+        "html": f"""
                         <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                            {db_warning}
                             <h2 style="color: #0d6efd; margin-top: 0;">⚡ 씨에라에너지 새로운 고객 문의</h2>
                             <p>웹사이트를 통해 새로운 태양광·RE100 관련 문의가 접수되었습니다.</p>
                             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
@@ -124,14 +126,64 @@ def inquiry():
                             </div>
                         </div>
                     """
-                }
-                resend.Emails.send(params)
+    }
+    try:
+        resend.Emails.send(params)
+        return True
+    except Exception:
+        app.logger.exception("문의 알림 이메일 발송 실패: company=%s", company_name)
+        return False
 
+
+@app.route('/inquiry', methods=['POST'])
+@limiter.limit("5 per hour")
+def inquiry():
+    # 고객 문의 데이터 수집 후 Supabase 'inquiries' 테이블에 저장
+    company_name = request.form.get('company_name')
+    manager_name = request.form.get('manager_name')
+    phone = request.form.get('phone')
+    email = request.form.get('email')
+    content = request.form.get('content')
+
+    if company_name and manager_name and phone and content:
+        # DB가 죽어도(예: 프로젝트 일시중지로 httpx.ConnectError) 문의가 유실되지 않게
+        # 저장과 알림 메일을 분리한다. 저장 실패는 메일을 막지 않는다.
+        db_saved = False
+        try:
+            supabase.table('inquiries').insert({
+                "company_name": company_name,
+                "manager_name": manager_name,
+                "phone": phone,
+                "email": email,
+                "content": content
+            }).execute()
+            db_saved = True
+        except Exception:
+            app.logger.exception(
+                "문의 DB 저장 실패 (알림 메일로 이어갑니다): company=%s",
+                company_name,
+            )
+
+        email_sent = _send_inquiry_notification(
+            company_name, manager_name, phone, email, content, db_saved
+        )
+
+        if email_sent or db_saved:
             flash('문의가 성공적으로 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.', 'success')
-        except Exception as e:
-            print("문의 등록 및 이메일 전송 에러:", e)
-            flash('문의 접수 중 오류가 발생했습니다.', 'danger')
-    
+        else:
+            app.logger.error(
+                "문의 유실: DB 저장과 알림 메일이 모두 실패했습니다. company=%s manager=%s phone=%s email=%s content=%s",
+                company_name,
+                manager_name,
+                phone,
+                email,
+                content.replace("\n", "\\n") if content else "",
+            )
+            flash(
+                f'문의 접수에 실패했습니다. 잠시 후 다시 시도하시거나 {INQUIRY_FALLBACK_CONTACT} 로 직접 연락해 주세요.',
+                'danger',
+            )
+
     return redirect(url_for('index'))
 
 @app.route('/dashboard/admin/update-inquiry-status/<int:inquiry_id>', methods=['POST'])
